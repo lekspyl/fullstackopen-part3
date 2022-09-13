@@ -65,6 +65,22 @@ app.post('/api/persons', (request, response) => {
   })
 })
 
+app.put('/api/persons/:id', (request, response, next) => {
+  const body = request.body
+
+  const entry = {
+    name: body.name,
+    number: body.number,
+  }
+
+  Phonebook.findByIdAndUpdate(request.params.id, entry, { new: true })
+    .then(updatedEntry => {
+      response.json(updatedEntry)
+    })
+    .catch(error => next(error))
+})
+
+// DEPRECATED: Use PUT instead
 app.patch('/api/persons/:id', (request, response) => {
   const body = request.body
 
@@ -81,6 +97,22 @@ app.patch('/api/persons/:id', (request, response) => {
     entry.save().then(entry => response.json(entry))
   })
 })
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+app.use(unknownEndpoint)
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  }
+
+  next(error)
+}
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
