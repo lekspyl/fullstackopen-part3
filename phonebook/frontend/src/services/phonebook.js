@@ -12,7 +12,7 @@ const createEntry = async newObject => {
 }
 
 const updateEntry = async (id, newObject) => {
-  return (await axios.patch(`${baseUrl}/${id}`, newObject)).data
+  return (await axios.put(`${baseUrl}/${id}`, newObject)).data
 }
 
 const deleteEntry = async id => {

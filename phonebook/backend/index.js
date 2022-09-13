@@ -33,14 +33,14 @@ app.get('/api/persons/:id', (request, response) => {
 
 app.delete('/api/persons/:id', (request, response) => {
   console.log('Deleting entry with id', request.params.id)
-  Phonebook.findByIdAndDelete(request.params.id).then(entry => {
+  Phonebook.findByIdAndDelete(request.params.id).then(() => {
     response.status(204).end()
   })
 })
 
-morgan.token('body', (req, res) => JSON.stringify(req.body));
+morgan.token('body', (req) => JSON.stringify(req.body))
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
   const body = request.body
 
   if (!body.name || !body.number) {
@@ -61,41 +61,25 @@ app.post('/api/persons', (request, response) => {
       name: body.name,
       number: body.number,
       date: new Date()
-    }).save().then(entry => response.json(entry))
+    })
+      .save()
+      .then(entry => response.json(entry))
+      .catch(error => next(error))
   })
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
-  const body = request.body
+  const { name, number } = request.body
 
-  const entry = {
-    name: body.name,
-    number: body.number,
-  }
-
-  Phonebook.findByIdAndUpdate(request.params.id, entry, { new: true })
+  Phonebook.findByIdAndUpdate(
+    request.params.id,
+    { name, number },
+    { new: true, runValidators: true, context: 'query' }
+  )
     .then(updatedEntry => {
       response.json(updatedEntry)
     })
     .catch(error => next(error))
-})
-
-// DEPRECATED: Use PUT instead
-app.patch('/api/persons/:id', (request, response) => {
-  const body = request.body
-
-  if (!body.name || !body.number) {
-    return response.status(400).json({
-      error: 'missing name or number'
-    })
-  }
-
-  Phonebook.findById(request.params.id).then(entry => {
-    console.log('Entry to patch:', entry)
-    entry.number = body.number
-    entry.date = new Date()
-    entry.save().then(entry => response.json(entry))
-  })
 })
 
 const unknownEndpoint = (request, response) => {
@@ -108,6 +92,8 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
   }
 
   next(error)

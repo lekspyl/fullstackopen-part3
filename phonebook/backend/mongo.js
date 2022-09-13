@@ -24,7 +24,7 @@ const Phonebook = mongoose.model('phonebook', phonebookSchema)
 
 mongoose
   .connect(url)
-  .then((result) => {
+  .then(() => {
     console.log('connected')
 
     if (name && number) {
@@ -33,7 +33,7 @@ mongoose
         number: number
       }
       const entry = new Phonebook(newEntry)
-      entry.save().then(result => {
+      entry.save().then(() => {
         console.log('saved an entry:', newEntry)
         mongoose.connection.close()
       })
